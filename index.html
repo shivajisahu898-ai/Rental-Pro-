@@ -1,33 +1,58 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rental Pro - Dhuma Seoni - Final</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rental Pro - UBER LIVE TRACKER</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 <style>
-body{font-family:Arial;margin:0;background:#f5f5f5}
-.header{background:#1e3a8a;color:white;padding:15px;text-align:center}
-.card{background:white;margin:10px;padding:15px;border-radius:15px;box-shadow:0 2px 8px rgba(0,0,0,0.1)}
-.btn{padding:10px 14px;border:none;border-radius:20px;color:white;font-weight:bold;margin:3px;cursor:pointer;font-size:13px}
-.btn-green{background:#16a34a}.btn-blue{background:#2563eb}.btn-orange{background:#ea580c}.btn-red{background:#dc2626}.btn-what{background:#25D366}
-.admin{background:#0f172a;color:white;padding:15px;margin-top:20px;min-height:400px}
+body{margin:0;font-family:Arial;background:#0b0f1a;color:#fff}
+.top{background:linear-gradient(90deg,#000,#2a56ff);padding:14px;text-align:center;font-weight:bold;font-size:18px}
+#map{height:55vh;width:100%;}
+.card{background:#181e2e;margin:10px;padding:14px;border-radius:16px}
+.btn{padding:12px 16px;border:none;border-radius:24px;font-weight:bold;margin:5px;cursor:pointer}
+.g{background:#22c55e;color:#000}.b{background:#3b82f6;color:#fff}.o{background:#f97316;color:#fff}.r{background:#ef4444;color:#fff}.y{background:#facc15;color:#000}
+input,select{width:100%;padding:12px;margin:6px 0;border-radius:10px;border:1px solid #2a3550;background:#0f1526;color:#fff;box-sizing:border-box}
+.tab{display:flex;gap:8px;padding:10px}
+.tab button{flex:1}
+.active-tab{background:#fff!important;color:#000!important}
+.badge{padding:4px 10px;border-radius:12px;font-size:12px}
+.ok{background:#bbf7d0;color:#14532d}
+.infoBox{background:#0f172a;border:1px dashed #3b82f6;padding:10px;border-radius:10px;margin:8px 0;font-size:13px}
 </style>
 </head>
 <body>
-<div class="header">
-<h2>🚜 Rental Pro - Dhuma Seoni</h2>
-<p>JCB, Tractor, Crane 24x7 Booking - Final Version</p>
+<div class="top">🚜 UBER STYLE LIVE TRACKER - Rental Pro Dhuma</div>
+<div class="tab">
+<button class="btn b active-tab" id="tabCustomer" onclick="switchTab('customer')">👤 CUSTOMER VIEW</button>
+<button class="btn b" id="tabDriver" onclick="switchTab('driver')">🚜 DRIVER VIEW</button>
 </div>
-
-<div id="vehicles"></div>
-
-<div class="admin">
-<h2>🔧 REAL ADMIN PANEL - Live</h2>
-<p id="stats">Loading...</p>
-<div id="bookings"><p>Bookings load ho rahi hai...</p></div>
+<div id="map"></div>
+<div id="customerPanel" class="card">
+<b style="color:#22c55e">👤 Customer - Apni Gaadi Live Dekho</b>
+<div id="customerStatus" class="infoBox">Map par 🚜 Driver aur 📍 Aapka location dikhega - UBER ki tarah</div>
+<input id="cName" placeholder="Naam *">
+<input id="cPhone" placeholder="Phone 10 digit *">
+<select id="cVehicle"><option>Gaadi Chuno</option><option value="JCB 3DX EcoXpert|10500">JCB 3DX - 10500</option><option value="Hyva 12 Wheeler|12000">Hyva 12 Wheeler - 12000</option><option value="Hydra Crane|8000">Hydra Crane - 8000</option></select>
+<button class="btn g" style="width:100%" onclick="bookUber()">📍 BOOK & START UBER TRACKING</button>
+<div id="customerLive"></div>
 </div>
-
+<div id="driverPanel" class="card" style="display:none">
+<b style="color:#facc15">🚜 Driver - Customer Tak Jao (UBER Mode)</b>
+<div id="driverStatus" class="infoBox">Sab bookings yahan dikhengi. ACCEPT dabate hi Live Tracking shuru!</div>
+<div id="driverBookings">Loading...</div>
+<div style="margin-top:12px">
+<button class="btn y" onclick="startDriverLive()" style="width:100%">🟢 MERA LIVE LOCATION CUSTOMER KO BHEJNA SHURU KARO</button>
+<button class="btn r" onclick="stopDriverLive()" style="width:100%">🔴 LIVE BAND KARO</button>
+</div>
+</div>
+<div class="card" style="background:#1e293b">
+<b>🔗 Direct Google Navigation (Backup)</b><br>
+<button class="btn o" onclick="openGoogleNav()">🧭 Google Maps Me Rasta Dekho</button>
+<button class="btn b" onclick="shareMyLocation()">📍 Mera Location Share Karo</button>
+</div>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyDmZFNijGNPtl278ToBzdRzzt68K8W6Ru8",
@@ -38,107 +63,142 @@ const firebaseConfig = {
   messagingSenderId: "554127859621",
   appId: "1:554127859621:android:4ec5e68d15fc905d1f524c"
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-const vehiclesData = [
-  {name:"JCB 3DX EcoXpert - India No.1", rate:10500, img:"🚜"},
-  {name:"Tractor with Trolley", rate:2500, img:"🚛"},
-  {name:"Hydra Crane 15 Ton", rate:8000, img:"🏗️"},
-  {name:"Poclain Excavator", rate:12000, img:"🚧"},
-  {name:"Water Tanker", rate:2000, img:"🚚"},
-  {name:"Road Roller", rate:6000, img:"🚜"}
-];
-
-function loadVehicles(){
-  let html="";
-  vehiclesData.forEach(v=>{
-    html+=`<div class="card"><h3>${v.img} ${v.name}</h3><p><b>Rate: ₹${v.rate}/day</b></p>
-    <button class="btn btn-green" onclick="bookNow('${v.name}','${v.rate}')">📅 Book Now</button>
-    <button class="btn btn-blue" onclick="payUPI('${v.rate}')">💰 Advance Pay</button></div>`;
-  });
-  document.getElementById('vehicles').innerHTML=html;
+let db=null;
+try{ firebase.initializeApp(firebaseConfig); db=firebase.database(); }catch(e){}
+let map = L.map('map').setView([21.90, 79.78], 11);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19}).addTo(map);
+let customerMarker=null, driverMarker=null, routeLine=null;
+let currentBookingId=null, driverWatchId=null, currentCustLat=null, currentCustLng=null, currentDriverLat=null, currentDriverLng=null;
+function switchTab(t){
+  document.getElementById('customerPanel').style.display = t==='customer'?'block':'none';
+  document.getElementById('driverPanel').style.display = t==='driver'?'block':'none';
+  document.getElementById('tabCustomer').className = t==='customer'? 'btn b active-tab' : 'btn b';
+  document.getElementById('tabDriver').className = t==='driver'? 'btn b active-tab' : 'btn b';
+  setTimeout(()=>map.invalidateSize(),200);
 }
-function payUPI(rate){
-  let upi="shivajisahu898@okicici";
-  let amount=Math.round(rate*0.1);
-  window.open(`upi://pay?pa=${upi}&pn=Rental Pro&am=${amount}&cu=INR&tn=Advance Booking`,"_blank");
-}
-function bookNow(vehicleName, rate){
-  let name = prompt("Aapka Naam?");
-  if(!name) return;
-  let phone = prompt("WhatsApp Number (10 digit)?");
-  if(!phone || phone.length<10) return alert("Sahi number dalo");
-  if(!confirm("Location ON kare? Driver ko aapka location dikhega")) {
-    let loc = prompt("Gaon ka naam likho?");
-    saveBooking(vehicleName, rate, name, phone, loc, "", "");
-    return;
-  }
-  navigator.geolocation.getCurrentPosition((pos)=>{
+function bookUber(){
+  let name=document.getElementById('cName').value.trim();
+  let phone=document.getElementById('cPhone').value.trim();
+  let veh=document.getElementById('cVehicle').value;
+  if(!name||!phone||phone.length<10||!veh||veh.includes('Chuno')) return alert('Naam, Phone, Gaadi bhare');
+  navigator.geolocation.getCurrentPosition(pos=>{
     let lat=pos.coords.latitude, lng=pos.coords.longitude;
-    let loc = prompt("Gaon/Location ka naam?");
-    saveBooking(vehicleName, rate, name, phone, loc||"GPS Location", lat, lng);
-  }, ()=>{
-    let loc = prompt("GPS Allow nahi hua, Gaon ka naam likho?");
-    saveBooking(vehicleName, rate, name, phone, loc||"Manual", "", "");
-  }, {enableHighAccuracy:true});
+    let id=Date.now().toString();
+    let [vName,vRate]=veh.split('|');
+    let data={id,vehicle:vName,rate:vRate,customerName:name,customerPhone:phone,custLat:lat,custLng:lng,driverLat:'',driverLng:'',status:'New - Driver Searching',time:new Date().toLocaleString('en-IN')};
+    if(db) db.ref('bookings/'+id).set(data);
+    let local=JSON.parse(localStorage.getItem('rental_bookings')||'[]'); local.push(data); localStorage.setItem('rental_bookings',JSON.stringify(local));
+    currentBookingId=id; currentCustLat=lat; currentCustLng=lng;
+    alert('✅ UBER Booking Ho Gayi! Ab driver ka wait karo - Map par dikhega');
+    showOnMap(lat,lng,'customer');
+    listenDriverForCustomer(id);
+    loadDriverBookings();
+  },e=>alert('GPS Allow karo: '+e.message),{enableHighAccuracy:true});
 }
-function saveBooking(vehicle, rate, cName, cPhone, loc, lat, lng){
-  let id = Date.now().toString();
-  db.ref("bookings/"+id).set({
-    vehicle: vehicle, rate: rate, customerName: cName, customerPhone: cPhone,
-    location: loc, custLat: lat, custLng: lng, driverLat: "", driverLng: "",
-    status: "Pending", time: new Date().toLocaleString("en-IN", {timeZone:"Asia/Kolkata"}), id: id
-  }).then(()=>{
-    alert("✅ Booking Ho Gayi! Driver aapko call karega");
-    let msg = `*Rental Pro* ✅ Booking Received%0A%0A${vehicle}%0AName: ${cName}%0ALoc: ${loc}%0AMap: https://www.google.com/maps?q=${lat},${lng}`;
-    window.open(`https://wa.me/91${cPhone}?text=${msg}`, "_blank");
-    setTimeout(()=>{
-      let adminMsg = `*NEW BOOKING* 🔔%0A${vehicle}%0ACust: ${cName} ${cPhone}%0ALoc: ${loc}%0Ahttps://www.google.com/maps?q=${lat},${lng}`;
-      window.open(`https://wa.me/919201900450?text=${adminMsg}`, "_blank");
-    },1000);
-  });
-}
-function loadBookings(){
-  db.ref("bookings").on("value", snap=>{
-    let data = snap.val();
-    let count = data ? Object.keys(data).length : 0;
-    document.getElementById('stats').innerText=`Vehicles: ${vehiclesData.length} | Bookings: ${count} | Firebase: Connected ✅`;
-    let html="";
-    if(!data){ document.getElementById('bookings').innerHTML="<p style='color:white'>Koi booking nahi</p>"; return; }
-    Object.values(data).reverse().forEach(b=>{
-      html+=`<div class="card" style="color:black">
-      <b>${b.vehicle} - ₹${b.rate}</b><br>👤 ${b.customerName} (${b.customerPhone})<br>📍 ${b.location} • ${b.time}<br>
-      Status: <b style="color:${b.status=='Pending'?'red':'green'}">${b.status}</b><br>
-      ${b.custLat?`Cust GPS: ${parseFloat(b.custLat).toFixed(5)}, ${parseFloat(b.custLng).toFixed(5)}<br>`:''}
-      ${b.driverLat?`Driver GPS: ${parseFloat(b.driverLat).toFixed(5)}, ${parseFloat(b.driverLng).toFixed(5)}<br>`:''}
-      <br>
-      <button class="btn btn-green" onclick="acceptBooking('${b.id}','${b.customerPhone}','${b.customerName}','${b.vehicle}')">✅ ACCEPT</button>
-      ${b.custLat?`<button class="btn btn-orange" onclick="openMap(${b.custLat},${b.custLng})">📍 Customer Kahan Hai?</button>
-      <a href="https://www.google.com/maps/dir/?api=1&destination=${b.custLat},${b.custLng}" target="_blank"><button class="btn btn-blue">🧭 Rasta Dekho</button></a>`: '<span style="color:red;font-size:12px">Customer ne GPS nahi diya</span>'}
-      ${b.driverLat?`<button class="btn btn-blue" onclick="openMap(${b.driverLat},${b.driverLng})">🚜 Driver Track</button>`:''}
-      <button class="btn btn-red" onclick="deleteBooking('${b.id}')">🗑️ DELETE</button>
-      <button class="btn btn-what" onclick="waCustomer('${b.customerPhone}')">💬 WA</button>
+function showOnMap(lat,lng,type){
+  if(type==='customer'){
+    if(customerMarker) map.removeLayer(customerMarker);
+    customerMarker=L.marker([lat,lng],{icon:L.divIcon({html:'📍',className:'',iconSize:[30,30]})}).addTo(map).bindPopup('Customer Yahan Hai').openPopup();
+    map.setView([lat,lng],14);
+  } else if(type==='driver'){
+    if(driverMarker) map.removeLayer(driverMarker);
+    driverMarker=L.marker([lat,lng],{icon:L.divIcon({html:'🚜',className:'',iconSize:[36,36]})}).addTo(map).bindPopup('Driver Yahan Hai');
+    if(currentCustLat&&currentCustLng){
+      if(routeLine) map.removeLayer(routeLine);
+      routeLine=L.polyline([[currentCustLat,currentCustLng],[lat,lng]],{color:'#3b82f6',dashArray:'8,8',weight:4}).addTo(map);
+      map.fitBounds([[currentCustLat,currentCustLng],[lat,lng]],{padding:[40,40]});
+      let dist = map.distance([currentCustLat,currentCustLng],[lat,lng])/1000;
+      document.getElementById('customerLive').innerHTML=`<div class="infoBox" style="border-color:#22c55e;color:#bbf7d0">
+        🚜 Driver ${dist.toFixed(1)} KM door hai!<br>
+        📍 Aap: ${currentCustLat.toFixed(5)}, ${currentCustLng.toFixed(5)}<br>
+        🚜 Driver: ${lat.toFixed(5)}, ${lng.toFixed(5)}<br>
+        <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank"><button class="btn b">🧭 Google Me Dekho</button></a>
       </div>`;
-    });
-    document.getElementById('bookings').innerHTML=html;
+    }
+  }
+}
+function listenDriverForCustomer(bookingId){
+  if(!db) return;
+  db.ref('bookings/'+bookingId).on('value',snap=>{
+    let b=snap.val(); if(!b) return;
+    if(b.driverLat&&b.driverLng){
+      currentDriverLat=b.driverLat; currentDriverLng=b.driverLng;
+      showOnMap(b.driverLat,b.driverLng,'driver');
+      document.getElementById('customerStatus').innerHTML=`<span class="badge ok">● LIVE</span> Driver On The Way - ${b.status}`;
+    }
   });
 }
-function openMap(lat,lng){ window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`, "_blank"); }
-function acceptBooking(id, phone, name, vehicle){
-  navigator.geolocation.getCurrentPosition((pos)=>{
-    let lat=pos.coords.latitude, lng=pos.coords.longitude;
-    db.ref("bookings/"+id).update({status:"Accepted - On The Way", driverLat:lat, driverLng:lng, acceptedAt:new Date().toLocaleString("en-IN")})
-    .then(()=>{
-      alert("✅ Accepted + Location ON");
-      let msg=`Hi ${name}, ${vehicle} ACCEPT ho gayi! Driver On The Way. Track: https://www.google.com/maps?q=${lat},${lng}`;
-      window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+function loadDriverBookings(){
+  if(db){
+    db.ref('bookings').on('value',snap=>{
+      let data=snap.val(); let arr=data?Object.values(data):[];
+      renderDriver(arr);
     });
-  }, e=>alert("Location Allow karo: "+e.message), {enableHighAccuracy:true});
+  } else {
+    renderDriver(JSON.parse(localStorage.getItem('rental_bookings')||'[]'));
+  }
 }
-function deleteBooking(id){ if(confirm("Delete?")) db.ref("bookings/"+id).remove(); }
-function waCustomer(p){ window.open(`https://wa.me/91${p}?text=${encodeURIComponent("Hi, Rental Pro se bol raha hu...")}`, "_blank"); }
-loadVehicles(); loadBookings();
+function renderDriver(arr){
+  if(arr.length==0){ document.getElementById('driverBookings').innerHTML='Koi booking nahi'; return; }
+  let html='';
+  arr.slice().reverse().forEach(b=>{
+    html+=`<div class="card" style="background:#0f172a;border:1px solid #334155">
+      <b>${b.vehicle} - ₹${b.rate}</b> - ${b.status}<br>
+      👤 ${b.customerName} - ${b.customerPhone}<br>
+      📍 ${b.custLat?b.custLat.toFixed(5)+', '+b.custLng.toFixed(5):'No GPS'}
+      <div style="margin-top:8px">
+        <button class="btn g" onclick="driverAccept('${b.id}',${b.custLat||0},${b.custLng||0})">✅ ACCEPT & START UBER TRACK</button>
+        ${b.custLat?`<button class="btn b" onclick="focusBooking(${b.custLat},${b.custLng},'${b.id}')">📍 MAP PAR DIKHAO</button>`:''}
+        <button class="btn r" onclick="deleteBooking('${b.id}')">DELETE</button>
+      </div>
+    </div>`;
+  });
+  document.getElementById('driverBookings').innerHTML=html;
+}
+function focusBooking(lat,lng,id){
+  currentBookingId=id; currentCustLat=lat; currentCustLng=lng;
+  switchTab('driver'); showOnMap(lat,lng,'customer');
+}
+function driverAccept(id,cLat,cLng){
+  currentBookingId=id; currentCustLat=cLat; currentCustLng=cLng;
+  showOnMap(cLat,cLng,'customer');
+  startDriverLive();
+  if(db) db.ref('bookings/'+id).update({status:'Accepted - UBER Live Started'});
+  alert('✅ Accept! Ab tumhara live location customer ko dikhega');
+}
+function startDriverLive(){
+  if(!currentBookingId) return alert('Pehle koi booking ACCEPT karo');
+  if(driverWatchId) navigator.geolocation.clearWatch(driverWatchId);
+  driverWatchId=navigator.geolocation.watchPosition(pos=>{
+    let lat=pos.coords.latitude, lng=pos.coords.longitude;
+    currentDriverLat=lat; currentDriverLng=lng;
+    showOnMap(lat,lng,'driver');
+    if(db) db.ref('bookings/'+currentBookingId).update({driverLat:lat,driverLng:lng,status:'On The Way - Live',driverUpdated:new Date().toLocaleString('en-IN')});
+    let local=JSON.parse(localStorage.getItem('rental_bookings')||'[]');
+    let idx=local.findIndex(x=>x.id==currentBookingId); if(idx>=0){ local[idx].driverLat=lat; local[idx].driverLng=lng; localStorage.setItem('rental_bookings',JSON.stringify(local)); }
+  },e=>alert('GPS Allow karo'),{enableHighAccuracy:true,maximumAge:0,timeout:10000});
+}
+function stopDriverLive(){
+  if(driverWatchId) navigator.geolocation.clearWatch(driverWatchId);
+  driverWatchId=null; alert('Live band');
+}
+function deleteBooking(id){
+  if(!confirm('Delete?')) return;
+  if(db) db.ref('bookings/'+id).remove();
+  let local=JSON.parse(localStorage.getItem('rental_bookings')||'[]'); local=local.filter(x=>x.id!=id); localStorage.setItem('rental_bookings',JSON.stringify(local));
+}
+function openGoogleNav(){
+  if(!currentCustLat||!currentDriverLat) return alert('Pehle Booking select karo aur Driver Live start karo');
+  let url=`https://www.google.com/maps/dir/?api=1&origin=${currentDriverLat},${currentDriverLng}&destination=${currentCustLat},${currentCustLng}`;
+  window.open(url,'_blank');
+}
+function shareMyLocation(){
+  navigator.geolocation.getCurrentPosition(p=>{
+    let url=`https://www.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`;
+    prompt('Ye link share karo:',url);
+  });
+}
+loadDriverBookings();
 </script>
 </body>
 </html>

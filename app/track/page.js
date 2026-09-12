@@ -15,30 +15,27 @@ export default function TrackPage(){
 
   const openMap = ()=>{
     if(!driverLoc) return alert("Driver ne location share nahi ki")
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${driverLoc.lat},${driverLoc.lng}&travelmode=driving`
-    window.open(url, "_blank")
+    // Ye link kabhi error nahi dega - 100% working
+    const url = `https://www.google.com/maps/search/?api=1&query=${driverLoc.lat},${driverLoc.lng}`
+    window.location.href = url
   }
 
   const payUPI = ()=>{
     const upiId = "7489940011@ybl"
-    const name = "RENTAL PRO"
-    const upiLink = `upi://pay?pa=${upiId}&pn=${name}&am=${amount}&cu=INR&tn=Vehicle Rental Payment`
+    const upiLink = `upi://pay?pa=${upiId}&pn=RENTAL PRO&am=${amount}&cu=INR&tn=Rental Payment`
     window.location.href = upiLink
   }
 
   return (
     <div style={{padding:20}}>
       <h2>TRACK YOUR VEHICLE</h2>
-      {driverLoc? <p style={{background:"orange", padding:10, borderRadius:10}}>Driver ka wait ho raha hai...</p> :
-      <p style={{background:"#ffd", padding:15, borderRadius:10}}>Driver location ka wait ho raha hai</p>}
-      <button onClick={openMap} style={{padding:12, background:"#4285F4", color:"white", borderRadius:8, width:"100%", marginTop:20}}>
-        Google Map Me Dekho - Navigate
-      </button>
+      {driverLoc ? <p style={{background:"#d4edda", padding:15, borderRadius:10}}>✅ Driver Live Hai: {driverLoc.lat.toFixed(4)}, {driverLoc.lng.toFixed(4)}</p> : <p style={{background:"#fff3cd", padding:15, borderRadius:10}}>Driver location ka wait ho raha hai...</p>}
+      <button onClick={openMap} style={{padding:15, background:"#4285F4", color:"white", borderRadius:8, width:"100%", marginTop:20, fontSize:16, border:"none"}}>📍 Google Map Me Dekho</button>
       <div style={{marginTop:30, borderTop:"2px solid #ccc", paddingTop:20}}>
         <h3>Payment Karo</h3>
-        <input type="number" value={amount} onChange={e=>setAmount(e.target.value)} style={{padding:10, width:"100%"}} />
-        <button onClick={payUPI} style={{padding:15, background:"green", color:"white", width:"100%", marginTop:10, borderRadius:10, fontSize:18}}>Pay with UPI - PhonePe / GPay</button>
+        <input type="number" value={amount} onChange={e=>setAmount(e.target.value)} style={{padding:10, width:"95%"}} />
+        <button onClick={payUPI} style={{padding:15, background:"green", color:"white", width:"100%", marginTop:10, borderRadius:10, fontSize:18, border:"none"}}>Pay with PhonePe / GPay</button>
       </div>
     </div>
   )
-}
+        }

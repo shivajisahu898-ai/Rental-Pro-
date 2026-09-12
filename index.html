@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html lang="hi">
-<head>
+
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Rental Pro - UBER LIVE TRACKER</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -187,18 +185,64 @@ function deleteBooking(id){
   if(db) db.ref('bookings/'+id).remove();
   let local=JSON.parse(localStorage.getItem('rental_bookings')||'[]'); local=local.filter(x=>x.id!=id); localStorage.setItem('rental_bookings',JSON.stringify(local));
 }
-function openGoogleNav(){
-  if(!currentCustLat||!currentDriverLat) return alert('Pehle Booking select karo aur Driver Live start karo');
-  let url=`https://www.google.com/maps/dir/?api=1&origin=${currentDriverLat},${currentDriverLng}&destination=${currentCustLat},${currentCustLng}`;
-  window.open(url,'_blank');
-}
-function shareMyLocation(){
-  navigator.geolocation.getCurrentPosition(p=>{
-    let url=`https://www.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`;
-    prompt('Ye link share karo:',url);
-  });
-}
-loadDriverBookings();
-</script>
-</body>
-</html>
+func
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UBER Live Tracker - RentalPro</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*{margin:0;padding:0;font-family:Arial}
+#map{height:100vh;width:100%}
+.top-bar{position:absolute;top:0;left:0;right:0;z-index:1000;background:white;padding:12px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,0.2)}
+.bottom-card{position:absolute;bottom:20px;left:10px;right:10px;z-index:1000;background:white;border-radius:15px;padding:15px;box-shadow:0 -2px 20px rgba(0,0,0,0.2)}
+.btn{background:black;color:white;border:none;padding:12px 20px;border-radius:10px;width:100%;font-size:16px;font-weight:bold}
+.status{color:green;font-weight:bold}
+</style>
+</head>
+<body>
+<div class="top-bar">
+<div><b>RentalPro</b><br><small class="status">● Driver is 2 mins away</small></div>
+<div>🚗 MH04-AB-1234</div>
+</div>
+<div id="map"></div>
+<div class="bottom-card">
+<div style="display:flex;justify-content:space-between;margin-bottom:10px">
+<div><b>Shivaji Sahu</b><br><small>⭐ 4.9 | Swift Dzire</small></div>
+<div style="text-align:right"><b>₹249</b><br><small>2.1 km</small></div>
+</div>
+<button class="btn" onclick="startRide()">▶ START LIVE TRACKING</button>
+</div>
+
+<script>
+// Khalwa, MP ka Map
+var map = L.map('map').setView([22.1, 76.8], 14);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+// UBER jaisi Car Icon
+var carIcon = L.divIcon({html:"🚗",className:"",iconSize:[30,30]});
+var driverMarker = L.marker([22.1, 76.8], {icon:carIcon}).addTo(map);
+var customerMarker = L.marker([22.105, 76.81]).addTo(map).bindPopup("Your Location");
+
+// Route line
+var route = L.polyline([[22.1,76.8],[22.105,76.81]], {color:"black", weight:4, dashArray:"10,10"}).addTo(map);
+
+var i=0;
+function startRide(){
+  var path = [
+      [22.1,76.8],[22.101,76.802],[22.102,76.805],[22.103,76.808],[22.105,76.81]
+        ];
+          setInterval(()=>{
+              if(i < path.length){
+                    driverMarker.setLatLng(path[i]);
+                          map.panTo(path[i]);
+                                i++;
+                                      if(i==path.length) alert("Driver Arrived! 🎉");
+                                          }
+                                            }, 1000);
+                                            }
+                                            </script>
+                                            </body>
+                                            </html>
